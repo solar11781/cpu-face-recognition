@@ -1,7 +1,9 @@
+# BASE VERSION WITH NO ANTI SPOOFING
+
 import os
 from deepface import DeepFace
 
-KNOWN_FACES_DIR = 'D:/testing ground/Face recognition asm/Face testing'
+KNOWN_FACES_DIR = 'D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/Face testing'
 
 def load_known_faces():
     known_faces = []
@@ -13,7 +15,8 @@ def load_known_faces():
         for image_name in os.listdir(person_folder):
             image_path = os.path.join(person_folder, image_name)
             try:
-                face = DeepFace.represent(img_path=image_path, model_name="VGG-Face")
+                # Use MTCNN as the face detection backend
+                face = DeepFace.represent(img_path=image_path, model_name="VGG-Face", detector_backend="mtcnn")
                 known_faces.append(face)
                 known_names.append(person_name)
             except Exception as e:
@@ -21,12 +24,21 @@ def load_known_faces():
     return known_faces, known_names
 
 def recognize_face(frame, known_faces, known_names):
-    result = DeepFace.find(frame, db_path=KNOWN_FACES_DIR, model_name="VGG-Face", enforce_detection=False)
-    if result:
-        for df in result:
-            if not df.empty:
-                best_match = df.loc[df['distance'].idxmin()]
-                recognized_name = os.path.basename(os.path.dirname(best_match['identity']))
-                return recognized_name, best_match
+    try:
+        # Use MTCNN as the face detection backend for real-time recognition
+        result = DeepFace.find(frame, db_path=KNOWN_FACES_DIR, model_name="VGG-Face", enforce_detection=False, detector_backend="mtcnn")
+        if result:
+            for df in result:
+                if not df.empty:
+                    best_match = df.loc[df['distance'].idxmin()]
+                    recognized_name = os.path.basename(os.path.dirname(best_match['identity']))
+                    return recognized_name, best_match
+    except Exception as e:
+        print(f"Error during recognition: {e}")
     return None, None
+
+###########################################################################################################################################
+
+
+
 
