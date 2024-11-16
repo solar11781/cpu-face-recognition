@@ -1,7 +1,7 @@
 import cv2
 
 # Load the DNN model
-net = cv2.dnn.readNetFromCaffe("D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/deploy.prototxt", "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/res10_300x300_ssd_iter_140000.caffemodel")
+net = cv2.dnn.readNetFromCaffe("deploy.prototxt", "res10_300x300_ssd_iter_140000.caffemodel")
 #https://github.com/opencv/opencv/tree/master/samples/dnn
 #https://huggingface.co/spaces/liangtian/birthdayCrown/blob/3db8f1c391e44bd9075b1c2854634f76c2ff46d0/res10_300x300_ssd_iter_140000.caffemodel
 
