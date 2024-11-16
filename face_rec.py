@@ -4,6 +4,7 @@ import os
 from deepface import DeepFace
 
 KNOWN_FACES_DIR = 'D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/Face testing'
+RECOGNITION_THRESHOLD = 0.5  # Adjust as needed (lower is stricter)
 
 def load_known_faces():
     known_faces = []
@@ -30,12 +31,16 @@ def recognize_face(frame, known_faces, known_names):
         if result:
             for df in result:
                 if not df.empty:
+                    # Get the closest match
                     best_match = df.loc[df['distance'].idxmin()]
-                    recognized_name = os.path.basename(os.path.dirname(best_match['identity']))
-                    return recognized_name, best_match
+                    if best_match['distance'] <= RECOGNITION_THRESHOLD:
+                        recognized_name = os.path.basename(os.path.dirname(best_match['identity']))
+                        return recognized_name, best_match
+                    else:
+                        return "Unknown", None
     except Exception as e:
         print(f"Error during recognition: {e}")
-    return None, None
+    return "Unknown", None
 
 ###########################################################################################################################################
 
