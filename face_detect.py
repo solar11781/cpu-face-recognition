@@ -2,8 +2,8 @@ import cv2
 
 # Load the DNN model
 net = cv2.dnn.readNetFromCaffe(
-    "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/deploy.prototxt",
-    "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/res10_300x300_ssd_iter_140000.caffemodel"
+    "deploy.prototxt",
+    "res10_300x300_ssd_iter_140000.caffemodel"
 )
 
 def detect_faces(frame, confidence_threshold=0.5):

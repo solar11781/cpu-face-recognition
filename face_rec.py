@@ -1,7 +1,7 @@
 import os
 from deepface import DeepFace
 
-KNOWN_FACES_DIR = 'D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/Face testing'
+KNOWN_FACES_DIR = 'Face testing'
 RECOGNITION_THRESHOLD = 0.5
 
 def load_known_faces():

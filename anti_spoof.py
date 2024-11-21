@@ -33,36 +33,15 @@ def detect_liveness(face_region):
         with torch.no_grad():
             output = anti_spoofing_model(input_tensor)
             probabilities = torch.softmax(output, dim=1)
-        print("Liveness probabilities:", probabilities.tolist())
+        print(f"Liveness probabilities (Real/Spoof/Other): {probabilities.tolist()}")
         liveness_score = probabilities[0, 1].item()
         print(f"Liveness Score: {liveness_score}")
-        return liveness_score > 0.5  # Lowered threshold
+        return liveness_score > 0.55  # Adjusted threshold
     except Exception as e:
         print(f"Error in detect_liveness: {e}")
         return False
 
 
-def detect_blink(frame, face_bbox):
-    """Detect if the person is blinking."""
-    x, y, w, h = face_bbox
-    face_roi = frame[y:y+h, x:x+w]
-    gray_face = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
-
-    # Load OpenCV's pre-trained eye detector
-    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_eye.xml")
-    eyes = eye_cascade.detectMultiScale(gray_face, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
-    # Return True if at least one eye is detected (blinking can be further enhanced with temporal checks)
-    print(f"Blink detection: {'Blink detected' if len(eyes) > 0 else 'No blink detected'}")
-    return len(eyes) > 0
-
-
-def check_background_consistency(frame, background_subtractor):
-    """Check if the background is static."""
-    fg_mask = background_subtractor.apply(frame)
-    motion_detected = cv2.countNonZero(fg_mask) > (0.01 * frame.size)
-    print(f"Background check: {'Motion detected' if motion_detected else 'Static background detected'}")
-    return motion_detected
 
 
 
