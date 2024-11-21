@@ -1,12 +1,11 @@
-# BASE VERSION WITH NO ANTI SPOOFING
-
 import os
 from deepface import DeepFace
 
 KNOWN_FACES_DIR = 'D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/Face testing'
-RECOGNITION_THRESHOLD = 0.5  # Adjust as needed (lower is stricter)
+RECOGNITION_THRESHOLD = 0.5
 
 def load_known_faces():
+    """Load known faces and their embeddings."""
     known_faces = []
     known_names = []
     for person_name in os.listdir(KNOWN_FACES_DIR):
@@ -16,7 +15,6 @@ def load_known_faces():
         for image_name in os.listdir(person_folder):
             image_path = os.path.join(person_folder, image_name)
             try:
-                # Use MTCNN as the face detection backend
                 face = DeepFace.represent(img_path=image_path, model_name="VGG-Face", detector_backend="mtcnn")
                 known_faces.append(face)
                 known_names.append(person_name)
@@ -24,26 +22,19 @@ def load_known_faces():
                 print(f"Error processing {image_path}: {e}")
     return known_faces, known_names
 
+
 def recognize_face(frame, known_faces, known_names):
+    """Recognize a face using DeepFace."""
     try:
-        # Use MTCNN as the face detection backend for real-time recognition
         result = DeepFace.find(frame, db_path=KNOWN_FACES_DIR, model_name="VGG-Face", enforce_detection=False, detector_backend="mtcnn")
         if result:
             for df in result:
                 if not df.empty:
-                    # Get the closest match
                     best_match = df.loc[df['distance'].idxmin()]
                     if best_match['distance'] <= RECOGNITION_THRESHOLD:
                         recognized_name = os.path.basename(os.path.dirname(best_match['identity']))
                         return recognized_name, best_match
-                    else:
-                        return "Unknown", None
     except Exception as e:
         print(f"Error during recognition: {e}")
     return "Unknown", None
-
-###########################################################################################################################################
-
-
-
 

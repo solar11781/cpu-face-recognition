@@ -1,13 +1,13 @@
-#Base model using Caffe model from openCV
-
 import cv2
 
 # Load the DNN model
-net = cv2.dnn.readNetFromCaffe("D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/deploy.prototxt", "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/res10_300x300_ssd_iter_140000.caffemodel")
-#https://github.com/opencv/opencv/tree/master/samples/dnn
-#https://huggingface.co/spaces/liangtian/birthdayCrown/blob/3db8f1c391e44bd9075b1c2854634f76c2ff46d0/res10_300x300_ssd_iter_140000.caffemodel
+net = cv2.dnn.readNetFromCaffe(
+    "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/deploy.prototxt",
+    "D:/testing ground/Face recognition asm/Mini-Face-recognition-using-Deepface-and-GAN/res10_300x300_ssd_iter_140000.caffemodel"
+)
 
 def detect_faces(frame, confidence_threshold=0.5):
+    """Detect faces in the given frame."""
     h, w = frame.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
     net.setInput(blob)
@@ -23,7 +23,9 @@ def detect_faces(frame, confidence_threshold=0.5):
             faces.append((x, y, width, height))
     return faces
 
+
 def draw_bounding_box(frame, x, y, w, h, name=None):
+    """Draw bounding box and name on the given frame."""
     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
     if name:
         cv2.putText(frame, name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)

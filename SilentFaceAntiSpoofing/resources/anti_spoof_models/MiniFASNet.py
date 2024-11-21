@@ -210,14 +210,16 @@ class MiniFASNet(Module):
         self.conv_6_sep = Conv_block(keep[46], keep[47], kernel=(1, 1), stride=(1, 1), padding=(0, 0))
         self.conv_6_dw = Linear_block(keep[47], keep[48], groups=keep[48], kernel=conv6_kernel, stride=(1, 1), padding=(0, 0))
         self.conv_6_flatten = Flatten()
-        self.linear = Linear(512, embedding_size, bias=False)
+        self.linear = Linear(4608, embedding_size, bias=True)
         self.bn = BatchNorm1d(embedding_size)
         self.drop = torch.nn.Dropout(p=drop_p)
         self.prob = Linear(embedding_size, num_classes, bias=False)
 
     def forward(self, x):
         out = self.conv1(x)
+        print("After conv1:", out.shape)
         out = self.conv2_dw(out)
+        print("After conv2_dw:", out.shape)
         out = self.conv_23(out)
         out = self.conv_3(out)
         out = self.conv_34(out)
@@ -227,7 +229,8 @@ class MiniFASNet(Module):
         out = self.conv_6_sep(out)
         out = self.conv_6_dw(out)
         out = self.conv_6_flatten(out)
-        if self.embedding_size != 512:
+        print("After Flatten:", out.shape)
+        if self.embedding_size != 4608:
             out = self.linear(out)
         out = self.bn(out)
         out = self.drop(out)
