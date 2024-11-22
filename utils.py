@@ -1,6 +1,6 @@
 import cv2
 
-def crop_face(frame, x, y, width, height, margin=20):
+def crop_face(frame, x, y, width, height, margin=40):
     """Crop face region with added margin."""
     h, w = frame.shape[:2]
     x = max(0, x - margin)
