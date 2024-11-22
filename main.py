@@ -1,13 +1,10 @@
 import cv2
 import time
-from face_rec import load_known_faces, recognize_face
+from face_rec import recognize_face
 from face_detect import detect_faces, draw_bounding_box
 from SilentFaceAntiSpoofing.test import test_from_image
 
-# Load known faces
-known_faces, known_names = load_known_faces()
-
-def recognize_faces():
+def recognize_faces(known_faces, known_names):
     """Real-time face recognition with integrated spoof detection."""
     video_capture = cv2.VideoCapture(0)
     last_recognition_time = 0
@@ -85,6 +82,8 @@ def recognize_faces():
 
     video_capture.release()
     cv2.destroyAllWindows()
+
+    return "Face recognition completed!"
 
 if __name__ == "__main__":
     recognize_faces()
