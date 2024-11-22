@@ -1,109 +1,94 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-9 下午3:06
-# @Author : zhuying
-# @Company : Minivision
-# @File : test.py
-# @Software : PyCharm
-
 import os
 import cv2
 import numpy as np
-import argparse
-import warnings
-import time
+from SilentFaceAntiSpoofing.src.anti_spoof_predict import AntiSpoofPredict
+from SilentFaceAntiSpoofing.src.generate_patches import CropImage
+from SilentFaceAntiSpoofing.src.utility import parse_model_name
 
-from src.anti_spoof_predict import AntiSpoofPredict
-from src.generate_patches import CropImage
-from src.utility import parse_model_name
-warnings.filterwarnings('ignore')
+# Initialize SilentFace components
+anti_spoof_predictor = AntiSpoofPredict(device_id=0)  # Change device_id if GPU is used
+image_cropper = CropImage()
 
+def test_from_image(image, model_dir):
+    """
+    Run anti-spoofing on a single image using models in the specified directory.
+    """
+    try:
+        # Validate model directory and its contents
+        if not os.path.exists(model_dir) or not any(f.endswith('.pth') for f in os.listdir(model_dir)):
+            raise FileNotFoundError(f"Model directory '{model_dir}' is invalid or contains no .pth files.")
 
-SAMPLE_IMAGE_PATH = "./images/sample/"
+        # Get face bounding box from the image
+        image_bbox = anti_spoof_predictor.get_bbox(image)
+        if image_bbox is None:
+            print("No face detected for anti-spoofing.")
+            return None
 
+        # Initialize predictions
+        prediction = np.zeros((1, 3))
 
-# 因为安卓端APK获取的视频流宽高比为3:4,为了与之一致，所以将宽高比限制为3:4
-def check_image(image):
-    height, width, channel = image.shape
-    if width/height != 3/4:
-        print("Image is not appropriate!!!\nHeight/Width should be 4/3.")
-        return False
-    else:
-        return True
+        # Aggregate predictions across models
+        valid_model_count = 0
+        for model_name in os.listdir(model_dir):
+            if not model_name.endswith('.pth'):
+                continue  # Skip non-model files
 
+            # Parse model name and prepare cropping
+            h_input, w_input, model_type, scale = parse_model_name(model_name)
+            param = {
+                "org_img": image,
+                "bbox": image_bbox,
+                "scale": scale,
+                "out_w": w_input,
+                "out_h": h_input,
+                "crop": True if scale else False,
+            }
+            cropped_face = image_cropper.crop(**param)
+            if cropped_face is None:
+                continue  # Skip invalid crops
 
-def test(image_name, model_dir, device_id):
-    model_test = AntiSpoofPredict(device_id)
-    image_cropper = CropImage()
-    image = cv2.imread(SAMPLE_IMAGE_PATH + image_name)
-    result = check_image(image)
-    if result is False:
-        return
-    image_bbox = model_test.get_bbox(image)
-    prediction = np.zeros((1, 3))
-    test_speed = 0
-    # sum the prediction from single model's result
-    for model_name in os.listdir(model_dir):
-        h_input, w_input, model_type, scale = parse_model_name(model_name)
-        param = {
-            "org_img": image,
-            "bbox": image_bbox,
-            "scale": scale,
-            "out_w": w_input,
-            "out_h": h_input,
-            "crop": True,
-        }
-        if scale is None:
-            param["crop"] = False
-        img = image_cropper.crop(**param)
-        start = time.time()
-        prediction += model_test.predict(img, os.path.join(model_dir, model_name))
-        test_speed += time.time()-start
+            # Predict using the model
+            model_path = os.path.join(model_dir, model_name)
+            try:
+                prediction += anti_spoof_predictor.predict(cropped_face, model_path)
+                valid_model_count += 1
+            except Exception as e:
+                print(f"Error during model prediction with {model_name}: {e}")
+                continue
 
-    # draw result of prediction
-    label = np.argmax(prediction)
-    value = prediction[0][label]/2
-    if label == 1:
-        print("Image '{}' is Real Face. Score: {:.2f}.".format(image_name, value))
-        result_text = "RealFace Score: {:.2f}".format(value)
-        color = (255, 0, 0)
-    else:
-        print("Image '{}' is Fake Face. Score: {:.2f}.".format(image_name, value))
-        result_text = "FakeFace Score: {:.2f}".format(value)
-        color = (0, 0, 255)
-    print("Prediction cost {:.2f} s".format(test_speed))
-    cv2.rectangle(
-        image,
-        (image_bbox[0], image_bbox[1]),
-        (image_bbox[0] + image_bbox[2], image_bbox[1] + image_bbox[3]),
-        color, 2)
-    cv2.putText(
-        image,
-        result_text,
-        (image_bbox[0], image_bbox[1] - 5),
-        cv2.FONT_HERSHEY_COMPLEX, 0.5*image.shape[0]/1024, color)
+        if valid_model_count == 0:
+            print("No valid models processed for anti-spoofing.")
+            return None
 
-    format_ = os.path.splitext(image_name)[-1]
-    result_image_name = image_name.replace(format_, "_result" + format_)
-    cv2.imwrite(SAMPLE_IMAGE_PATH + result_image_name, image)
+        # Final decision based on aggregated predictions
+        label = np.argmax(prediction)
+        if label == 1:  # Real face
+            return "Real"
+        elif label == 2:  # Spoof face
+            return "Fake"
+        else:
+            return None
 
+    except Exception as e:
+        print(f"Error during anti-spoofing detection: {e}")
+        return None
 
 if __name__ == "__main__":
-    desc = "test"
-    parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument(
-        "--device_id",
-        type=int,
-        default=0,
-        help="which gpu id, [0/1/2/3]")
-    parser.add_argument(
-        "--model_dir",
-        type=str,
-        default="./resources/anti_spoof_models",
-        help="model_lib used to test")
-    parser.add_argument(
-        "--image_name",
-        type=str,
-        default="image_F1.jpg",
-        help="image used to test")
-    args = parser.parse_args()
-    test(args.image_name, args.model_dir, args.device_id)
+    # Example usage for testing purposes
+    model_directory = "SilentFaceAntiSpoofing/resources/anti_spoof_models"
+    test_image_path = "test_image.jpg"
+
+    # Check if the image exists
+    if not os.path.exists(test_image_path):
+        print(f"Test image not found at {test_image_path}")
+    else:
+        # Read the image
+        test_image = cv2.imread(test_image_path)
+        result = test_from_image(test_image, model_directory)
+        if result == "Real":
+            print("The face is real.")
+        elif result == "Fake":
+            print("The face is fake/spoofed.")
+        else:
+            print("No decision could be made.")
+
