@@ -1,88 +1,89 @@
 import cv2
 import time
-from face_rec import load_known_faces, recognize_face
+from face_rec import recognize_face
 from face_detect import detect_faces, draw_bounding_box
+from SilentFaceAntiSpoofing.test import test_from_image
 
-# Load known faces
-known_faces, known_names = load_known_faces()
-
-def recognize_faces():
+def recognize_faces(known_faces, known_names):
+    """Real-time face recognition with integrated spoof detection."""
     video_capture = cv2.VideoCapture(0)
     last_recognition_time = 0
-    base_margin = 20  # Base margin to increase bounding box size for matching
-    recognized_faces = []  # List to store recognized faces with names and bounding boxes
+    recognition_interval = 2  # Perform recognition every 2 seconds
+    base_margin = 40  # Base margin for bounding box adjustments
+    recognized_faces = []  # Cache for recognized faces
+    model_dir = "SilentFaceAntiSpoofing/resources/anti_spoof_models"  # Path to anti-spoofing model directory
 
     while True:
         ret, frame = video_capture.read()
         if not ret:
             break
 
-        # Detect faces continuously for real-time bounding box tracking
+        # Detect faces in the current frame
         faces = detect_faces(frame)
 
-        # Perform recognition only every 2 seconds
+        # Perform face recognition and spoof detection periodically
         current_time = time.time()
-        if current_time - last_recognition_time >= 2:
+        if current_time - last_recognition_time >= recognition_interval:
             last_recognition_time = current_time
-            recognized_faces.clear()  # Clear previous recognition results
+            recognized_faces.clear()  # Reset for fresh recognition
 
-            # Recognize each detected face
             for (x, y, width, height) in faces:
-                # Adjust bounding box with base margin
-                margin = int(min(width, height) * 0.1) + base_margin  # Dynamic margin based on face size
+                # Dynamically adjust bounding box with a margin
+                margin = int(min(width, height) * 0.1) + base_margin
                 x = max(0, x - margin)
                 y = max(0, y - margin)
                 width = min(width + 2 * margin, frame.shape[1] - x)
                 height = min(height + 2 * margin, frame.shape[0] - y)
 
-                # Extract the face region for recognition
+                # Extract the face region
                 face_region = frame[y:y+height, x:x+width]
+
+                # Perform recognition
                 name, _ = recognize_face(face_region, known_faces, known_names)
 
-                # Add the recognized face to the list with its bounding box
-                recognized_faces.append((name, x, y, width, height))
+                if name:
+                    # If recognized, check for spoofing
+                    try:
+                        spoof_result = test_from_image(face_region, model_dir)
+                        if spoof_result == "Fake":
+                            name = "Spoof Detected"
+                    except Exception as e:
+                        print(f"Error during spoof detection: {e}")
+                        name = "Error in Spoof Check"
 
-        # Update bounding boxes for continuous tracking even without new recognition
-        tracked_faces = []
+                    # Cache recognized face information
+                    recognized_faces.append((name, x, y, width, height))
+
+        # Update bounding boxes dynamically, matching with recognized faces
         for (x, y, width, height) in faces:
-            # Adjust bounding box with dynamic margin
+            # Dynamically adjust bounding box
             margin = int(min(width, height) * 0.1) + base_margin
             x = max(0, x - margin)
             y = max(0, y - margin)
             width = min(width + 2 * margin, frame.shape[1] - x)
             height = min(height + 2 * margin, frame.shape[0] - y)
 
-            # Find the closest match in recognized_faces by proximity and size
-            name = None
-            best_match = None
-            min_distance = float('inf')
+            # Match with recognized faces based on proximity
+            name = None  # Default label for unmatched faces
             for stored_name, stored_x, stored_y, stored_width, stored_height in recognized_faces:
-                # Calculate distance based on position and size similarity
                 distance = abs(x - stored_x) + abs(y - stored_y)
                 size_difference = abs(width - stored_width) + abs(height - stored_height)
-                
-                # Update best match if this face is closer and has similar size
-                if distance < min_distance and size_difference < margin:
-                    min_distance = distance
-                    best_match = (stored_name, stored_x, stored_y, stored_width, stored_height)
+                if distance < base_margin and size_difference < base_margin:
+                    name = stored_name
+                    break
 
-            # Use the best match's name if found
-            if best_match:
-                name = best_match[0]
-
-            tracked_faces.append((name, x, y, width, height))
-
-        # Draw bounding boxes and names for each face in tracked_faces
-        for (name, x, y, width, height) in tracked_faces:
+            # Draw the bounding box and label
             draw_bounding_box(frame, x, y, width, height, name)
 
-        # Show the frame
-        cv2.imshow('Face Recognition with OpenCV DNN', cv2.resize(frame, (640, 480)))
+        # Display the video feed with bounding boxes
+        cv2.imshow('Face Recognition with Spoof Detection', cv2.resize(frame, (640, 480)))
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     video_capture.release()
     cv2.destroyAllWindows()
+
+    return "Face recognition completed!"
 
 if __name__ == "__main__":
     recognize_faces()
@@ -90,95 +91,15 @@ if __name__ == "__main__":
 
 
 
-###################################################################################
-#save image that is used to put into vgg face 
-# def recognize_faces():
-#     video_capture = cv2.VideoCapture(0)
-#     last_recognition_time = 0
-#     base_margin = 20  # Base margin to increase bounding box size for matching
-#     recognized_faces = []  # List to store recognized faces with names and bounding boxes
-#     save_dir = os.path.dirname(__file__)  # Directory to save the images
 
-#     while True:
-#         ret, frame = video_capture.read()
-#         if not ret:
-#             break
 
-#         # Detect faces continuously for real-time bounding box tracking
-#         faces = detect_faces(frame)
 
-#         # Perform recognition only every 2 seconds
-#         current_time = time.time()
-#         if current_time - last_recognition_time >= 2:
-#             last_recognition_time = current_time
-#             recognized_faces.clear()  # Clear previous recognition results
 
-#             # Recognize each detected face
-#             for i, (x, y, width, height) in enumerate(faces):
-#                 # Adjust bounding box with base margin
-#                 margin = int(min(width, height) * 0.1) + base_margin
-#                 x = max(0, x - margin)
-#                 y = max(0, y - margin)
-#                 width = min(width + 2 * margin, frame.shape[1] - x)
-#                 height = min(height + 2 * margin, frame.shape[0] - y)
 
-#                 # Extract the face region for recognition
-#                 face_region = frame[y:y+height, x:x+width]
-                
-#                 # Save the face image to the directory
-#                 face_image_path = os.path.join(save_dir, f"face_input_{i}_{int(current_time)}.jpg")
-#                 cv2.imwrite(face_image_path, face_region)
 
-#                 # Perform recognition
-#                 name, _ = recognize_face(face_region, known_faces, known_names)
 
-#                 # Add the recognized face to the list with its bounding box
-#                 recognized_faces.append((name, x, y, width, height))
 
-#         # Update bounding boxes for continuous tracking even without new recognition
-#         tracked_faces = []
-#         for (x, y, width, height) in faces:
-#             # Adjust bounding box with dynamic margin
-#             margin = int(min(width, height) * 0.1) + base_margin
-#             x = max(0, x - margin)
-#             y = max(0, y - margin)
-#             width = min(width + 2 * margin, frame.shape[1] - x)
-#             height = min(height + 2 * margin, frame.shape[0] - y)
 
-#             # Find the closest match in recognized_faces by proximity and size
-#             name = None
-#             best_match = None
-#             min_distance = float('inf')
-#             for stored_name, stored_x, stored_y, stored_width, stored_height in recognized_faces:
-#                 # Calculate distance based on position and size similarity
-#                 distance = abs(x - stored_x) + abs(y - stored_y)
-#                 size_difference = abs(width - stored_width) + abs(height - stored_height)
-                
-#                 # Update best match if this face is closer and has similar size
-#                 if distance < min_distance and size_difference < margin:
-#                     min_distance = distance
-#                     best_match = (stored_name, stored_x, stored_y, stored_width, stored_height)
-
-#             # Use the best match's name if found
-#             if best_match:
-#                 name = best_match[0]
-
-#             tracked_faces.append((name, x, y, width, height))
-
-#         # Draw bounding boxes and names for each face in tracked_faces
-#         for (name, x, y, width, height) in tracked_faces:
-#             draw_bounding_box(frame, x, y, width, height, name)
-
-#         # Show the frame
-#         cv2.imshow('Face Recognition with OpenCV DNN', cv2.resize(frame, (640, 480)))
-#         if cv2.waitKey(1) & 0xFF == ord('q'):
-#             break
-
-#     video_capture.release()
-#     cv2.destroyAllWindows()
-
-# if __name__ == "__main__":
-#     recognize_faces()
 
 
 
