@@ -5,6 +5,7 @@ This project implements a real-time Face Recognition Attendance System designed 
 
 Key features include:
 - Multi-angle face registration.
+- Multi face detection/tracking/recognition
 - Real-time face detection using lightweight models.
 - Face recognition with robust feature extraction.
 - Anti-spoofing to detect and block fake faces from photos or videos.
@@ -18,31 +19,20 @@ Key features include:
 - Images are processed and stored for training and recognition.
 
 ### Face Detection
-- Utilizes the SSD ResNet-10 model for efficient and accurate face detection.
+- Can detect multiple faces at once.
 - Optimized for CPU-only environments.
 
 ### Face Recognition
 - Employs the VGG-Face model for feature extraction and recognition.
 - Uses MTCNN for facial landmark detection and bounding box generation.
-- Capable of recognizing faces even with accessories like masks or hats.
+- Capable of recognizing faces even with accessories like masks or hats (sometimes).
+- due to CPU constraint each face is only recognize once every 2 seconds
 
 ### Anti-Spoofing
 - Integrates the Silent Face Anti-Spoofing framework to block spoofed inputs (e.g., photos or videos).
-- Analyzes texture, depth, and motion inconsistencies to identify fake faces.
 
 ### GAN-Based Image Enhancement
-- Experiments with Real-ESRGAN and GFPGAN to enhance image quality in challenging scenarios (e.g., low light or motion blur).
-
----
-
-## Technologies Used
-- **Programming Languages:** Python
-- **Libraries and Frameworks:**
-  - TensorFlow, PyTorch, OpenCV
-  - DeepFace for face recognition
-  - Silent Face Anti-Spoofing framework
-- **GAN Models:**
-  - Real-ESRGAN and GFPGAN for image enhancement
+- Experiments with Real-ESRGAN and GFPGAN to enhance image quality in challenging scenarios (e.g., low light or motion blur or too far away causing low resolution image).
 
 ---
 
@@ -54,6 +44,3 @@ Key features include:
    pip install -r requirements.txt
 
    python app.py
-
-
-
