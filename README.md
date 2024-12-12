@@ -41,6 +41,6 @@ Key features include:
    ```bash
    git clone https://github.com/nguyengiabinh/CPU-only-Face-recognition.git
 
-   pip install -r requirements.txt
+   pip install -r dependencies.txt
 
    python app.py
