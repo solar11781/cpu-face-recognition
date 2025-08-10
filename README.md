@@ -1,3 +1,5 @@
+> **Note:** This repository is a fork of [nguyengiabinh/CPU-only-Face-recognition](https://github.com/nguyengiabinh/CPU-only-Face-recognition), originally developed as part of a university collaboration project.
+
 # Face Recognition Attendance System with Anti-Spoofing
 
 ## Overview
